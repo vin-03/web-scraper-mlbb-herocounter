@@ -144,7 +144,7 @@ async function scrapeHero(page, heroId) {
 }
 
 async function scrapeMultiple(idFrom, idTo) {
-    const browser = await puppeteer.launch({ headless: false });
+    const browser = await puppeteer.launch({ headless: true });
     const page = await browser.newPage();
     const url = `https://m.mobilelegends.com/hero/detail?channelid=3054554&heroid=1`;
     await page.goto(url);
@@ -174,8 +174,28 @@ async function scrapeMultiple(idFrom, idTo) {
 
     for (let i = idFrom; i <= idTo; i++) {
         const hero = await scrapeHero(page, i);
-        heroesCounter.push(hero);
+
+        // Controlla se ci sono valori null in qualsiasi array
+        const hasNullValues = hero.counters.includes(null) ||
+            hero.counteredBy.includes(null) ||
+            hero.synergy.includes(null) ||
+            hero.antiSynergy.includes(null);
+
+        if (
+            hero.counters.length != 5 ||
+            hero.counteredBy.length != 5 ||
+            hero.synergy.length != 5 ||
+            hero.antiSynergy.length != 5 ||
+            hasNullValues
+        ) {
+            console.log(`Hero ${i} dati incompleti o con null, ripeto...`);
+            i--;
+        } else {
+            heroesCounter.push(hero);
+            console.log(`Hero ${i} completato con successo`);
+        }
     }
+
 
     console.log(JSON.stringify(heroesCounter, null, 2));
     fs.writeFileSync('./data/heroescounter.json', JSON.stringify(heroesCounter, null, 2))
@@ -183,4 +203,4 @@ async function scrapeMultiple(idFrom, idTo) {
     await browser.close();
 }
 
-scrapeMultiple(1, 10)
+scrapeMultiple(1, 129)
